@@ -58,6 +58,7 @@ public:
         CN_PICO_0,     // "cn-pico"          CryptoNight-Pico
         CN_PICO_TLO,   // "cn-pico/tlo"      CryptoNight-Pico (TLO)
         CN_CCX,        // "cn/ccx"           Conceal (CCX)
+        CN_GPU,        // "cn/gpu"           CryptoNight-GPU (Ryo).
         RX_0,          // "rx/0"             RandomX (reference configuration).
         RX_WOW,        // "rx/wow"           RandomWOW (Wownero).
         RX_LOKI,       // "rx/loki"          RandomXL (Loki).
@@ -215,6 +216,7 @@ public:
         case CN_ZLS:
         case CN_DOUBLE:
         case CN_CCX:
+        case CN_GPU:
             return CN;
 
         case CN_LITE_0:

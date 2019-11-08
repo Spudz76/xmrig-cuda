@@ -476,8 +476,12 @@ void cryptonight_extra_cpu_final(nvid_ctx *ctx, uint32_t startNonce, uint64_t ta
     if (algorithm.family() == Algorithm::CN_HEAVY) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_HEAVY_0><<<grid, block >>>( wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state,ctx->d_ctx_key2 ));
     } else {
-        // fallback for all other algorithms
-        CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_0> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+        if (algorithm == Algorithm::CN_GPU) {
+            CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_gpu_extra_gpu_final<Algorithm::CN_GPU> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+        } else {
+            // fallback for all other algorithms
+            CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_0> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+        }
     }
 
     CUDA_CHECK(ctx->device_id, cudaMemcpy(rescount, ctx->d_result_count, sizeof(uint32_t), cudaMemcpyDeviceToHost));

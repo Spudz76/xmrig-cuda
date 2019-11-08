@@ -955,6 +955,10 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint
             cryptonight_core_gpu_hash<Algorithm::CN_CCX>(ctx, startNonce);
             break;
 
+        case Algorithm::CN_GPU:
+            cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
+            break;
+
         default:
             break;
         }
