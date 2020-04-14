@@ -141,6 +141,8 @@ set(CUDA_RANDOMX_SOURCES
     src/RandomX/randomx.cu
     src/RandomX/wownero/configuration.h
     src/RandomX/wownero/randomx_wownero.cu
+#    src/RandomX/defyx/configuration.h
+#    src/RandomX/defyx/randomx_defyx.cu
 )
 
 set(CUDA_ASTROBWT_SOURCES

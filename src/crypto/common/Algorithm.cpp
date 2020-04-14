@@ -77,6 +77,7 @@ static AlgoName const algorithm_names[] = {
     { "cn/ccx",           Algorithm::CN_CCX          },
     { "astrobwt",         Algorithm::ASTROBWT_DERO   },
     { "kawpow",           Algorithm::KAWPOW_RVN      },
+    { "defyx",            Algorithm::RX_DEFYX        },
 };
 
 
