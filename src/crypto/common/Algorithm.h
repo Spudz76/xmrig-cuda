@@ -155,6 +155,7 @@ public:
 
         case RX_WOW:
         case RX_KEVA:
+        case RX_DEFYX:
             return 0x20000;
 
         case RX_ARQ:
