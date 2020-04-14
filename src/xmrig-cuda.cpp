@@ -166,6 +166,7 @@ bool deviceInit(nvid_ctx *ctx)
 }
 
 
+#ifdef XMRIG_ALGO_RANDOMX
 bool rxHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce)
 {
     resetError(ctx->device_id);
@@ -191,6 +192,10 @@ bool rxHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *resco
 
         case xmrig::Algorithm::RX_KEVA:
             RandomX_Keva::hash(ctx, startNonce, target, rescount, resnonce, ctx->rx_batch_size);
+            break;
+
+        case xmrig::Algorithm::RX_DEFYX:
+            RandomX_DefyX::hash(ctx, startNonce, target, rescount, resnonce, ctx->rx_batch_size);
             break;
 
         default:
@@ -222,8 +227,10 @@ bool rxPrepare(nvid_ctx *ctx, const void *dataset, size_t datasetSize, bool, uin
 
     return true;
 }
+#endif
 
 
+#ifdef XMRIG_ALGO_ASTROBWT
 bool astroBWTHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce)
 {
     resetError(ctx->device_id);
@@ -263,6 +270,7 @@ bool astroBWTPrepare(nvid_ctx *ctx, uint32_t batchSize)
 
     return true;
 }
+#endif
 
 
 bool kawPowHash(nvid_ctx *ctx, uint8_t* job_blob, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t *skipped_hashes)

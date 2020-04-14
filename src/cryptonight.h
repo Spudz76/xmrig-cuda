@@ -73,6 +73,7 @@ struct nvid_ctx {
     uint32_t *d_ctx_key2                = nullptr;
     uint32_t *d_ctx_text                = nullptr;
 
+#   ifdef XMRIG_ALGO_RANDOMX
     uint32_t rx_batch_size              = 0;
     int32_t rx_dataset_host             = -1;
     uint32_t *d_rx_dataset              = nullptr;
@@ -80,7 +81,9 @@ struct nvid_ctx {
     uint32_t *d_rx_entropy              = nullptr;
     uint32_t *d_rx_vm_states            = nullptr;
     uint32_t *d_rx_rounding             = nullptr;
+#   endif
 
+#   ifdef XMRIG_ALGO_ASTROBWT
     uint32_t astrobwt_intensity         = 0;
     uint32_t astrobwt_batch1_size       = 0;
     uint32_t astrobwt_processed_hashes  = 0;
@@ -93,7 +96,9 @@ struct nvid_ctx {
     void* astrobwt_shares               = nullptr;
     void* astrobwt_offsets_begin        = nullptr;
     void* astrobwt_offsets_end          = nullptr;
+#   endif
 
+#   ifdef XMRIG_ALGO_KAWPOW_RVN
     void* kawpow_cache                  = nullptr;
     size_t kawpow_cache_size            = 0;
     size_t kawpow_cache_capacity        = 0;
@@ -107,6 +112,7 @@ struct nvid_ctx {
     uint32_t kawpow_period              = 0;
     CUmodule kawpow_module              = nullptr;
     CUfunction kawpow_kernel            = nullptr;
+#   endif
 };
 
 
@@ -120,6 +126,7 @@ void cryptonight_extra_cpu_prepare(nvid_ctx *ctx, uint32_t startNonce, const xmr
 void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint64_t height, uint32_t startNonce);
 void cryptonight_extra_cpu_final(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, const xmrig::Algorithm &algorithm);
 
+#ifdef XMRIG_ALGO_RANDOMX
 void randomx_prepare(nvid_ctx *ctx, const void *dataset, size_t dataset_size, uint32_t batch_size);
 
 namespace RandomX_Arqma   { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t batch_size); }
@@ -127,12 +134,18 @@ namespace RandomX_Loki    { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t ta
 namespace RandomX_Monero  { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t batch_size); }
 namespace RandomX_Wownero { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t batch_size); }
 namespace RandomX_Keva    { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t batch_size); }
+namespace RandomX_DefyX   { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t batch_size); }
+#endif
 
+#ifdef XMRIG_ALGO_ASTROBWT
 void astrobwt_prepare(nvid_ctx *ctx, uint32_t batch_size);
 
 namespace AstroBWT_Dero   { void hash(nvid_ctx *ctx, uint32_t nonce, uint64_t target, uint32_t *rescount, uint32_t *resnonce); }
+#endif
 
+#ifdef XMRIG_ALGO_KAWPOW_RVN
 void kawpow_prepare(nvid_ctx *ctx, const void* cache, size_t cache_size, const void* dag_precalc, size_t dag_size, uint32_t height, const uint64_t* dag_sizes);
 void kawpow_stop_hash(nvid_ctx *ctx);
 
 namespace KawPow_Raven    { void hash(nvid_ctx *ctx, uint8_t* job_blob, uint64_t target, uint32_t *rescount, uint32_t *resnonce, uint32_t *skipped_hashes); }
+#endif

@@ -50,37 +50,69 @@ public:
         CN_RWZ,        // "cn/rwz"           CryptoNight variant 2 with 3/4 iterations and reversed shuffle operation (Graft).
         CN_ZLS,        // "cn/zls"           CryptoNight variant 2 with 3/4 iterations (Zelerius).
         CN_DOUBLE,     // "cn/double"        CryptoNight variant 2 with double iterations (X-CASH).
+        CN_CCX,        // "cn/ccx"           Conceal (CCX)
+#       ifdef XMRIG_ALGO_CN_GPU
+        CN_GPU,        // "cn/gpu"           CryptoNight-GPU (Ryo).
+#       endif
+#       ifdef XMRIG_ALGO_CN_LITE
         CN_LITE_0,     // "cn-lite/0"        CryptoNight-Lite variant 0.
         CN_LITE_1,     // "cn-lite/1"        CryptoNight-Lite variant 1.
+#       endif
+#       ifdef XMRIG_ALGO_CN_HEAVY
         CN_HEAVY_0,    // "cn-heavy/0"       CryptoNight-Heavy (4 MB).
         CN_HEAVY_TUBE, // "cn-heavy/tube"    CryptoNight-Heavy (modified, TUBE only).
         CN_HEAVY_XHV,  // "cn-heavy/xhv"     CryptoNight-Heavy (modified, Haven Protocol only).
+#       endif
+#       ifdef XMRIG_ALGO_CN_PICO
         CN_PICO_0,     // "cn-pico"          CryptoNight-Pico
         CN_PICO_TLO,   // "cn-pico/tlo"      CryptoNight-Pico (TLO)
-        CN_CCX,        // "cn/ccx"           Conceal (CCX)
+#       endif
+#       ifdef XMRIG_ALGO_RANDOMX
         RX_0,          // "rx/0"             RandomX (reference configuration).
         RX_WOW,        // "rx/wow"           RandomWOW (Wownero).
         RX_LOKI,       // "rx/loki"          RandomXL (Loki).
         RX_ARQ,        // "rx/arq"           RandomARQ (Arqma).
         RX_SFX,        // "rx/sfx"           RandomSFX (Safex Cash).
         RX_KEVA,       // "rx/keva"          RandomKV (Keva).
+        RX_DEFYX,      // "defyx"            DefyX (Scala).
+#       endif
+#       ifdef XMRIG_ALGO_ARGON2
         AR2_CHUKWA,    // "argon2/chukwa"    Argon2id (Chukwa).
         AR2_WRKZ,      // "argon2/wrkz"      Argon2id (WRKZ)
+#       endif
+#       ifdef XMRIG_ALGO_ASTROBWT
         ASTROBWT_DERO, // "astrobwt"         AstroBWT (Dero)
+#       endif
+#       ifdef XMRIG_ALGO_KAWPOW_RVN
         KAWPOW_RVN,    // "kawpow/rvn"       KawPow (RVN)
+#       endif
         MAX
     };
 
     enum Family : int {
-        UNKNOWN,
-        CN,
-        CN_LITE,
-        CN_HEAVY,
-        CN_PICO,
-        RANDOM_X,
-        ARGON2,
-        ASTROBWT,
-        KAWPOW
+        UNKNOWN
+        ,CN
+#       ifdef XMRIG_ALGO_CN_LITE
+        ,CN_LITE
+#       endif
+#       ifdef XMRIG_ALGO_CN_HEAVY
+        ,CN_HEAVY
+#       endif
+#       ifdef XMRIG_ALGO_CN_PICO
+        ,CN_PICO
+#       endif
+#       ifdef XMRIG_ALGO_RANDOMX
+        ,RANDOM_X
+#       endif
+#       ifdef XMRIG_ALGO_ARGON2
+        ,ARGON2
+#       endif
+#       ifdef XMRIG_ALGO_ASTROBWT
+        ,ASTROBWT
+#       endif
+#       ifdef XMRIG_ALGO_KAWPOW_RVN
+        ,KAWPOW
+#       endif
     };
 
     inline Algorithm() = default;
@@ -88,7 +120,17 @@ public:
     inline Algorithm(Id id) : m_id(id)                                                          {}
     inline Algorithm(int id) : m_id(id > INVALID && id < MAX ? static_cast<Id>(id) : INVALID)   {}
 
-    inline bool isCN() const                          { auto f = family(); return f == CN || f == CN_LITE || f == CN_HEAVY || f == CN_PICO; }
+    inline bool isCN() const                          { auto f = family(); return f == CN
+#       ifdef XMRIG_ALGO_CN_LITE
+        || f == CN_LITE
+#       endif
+#       ifdef XMRIG_ALGO_CN_HEAVY
+        || f == CN_HEAVY
+#       endif
+#       ifdef XMRIG_ALGO_CN_PICO
+        || f == CN_PICO
+#       endif
+    ; }
     inline bool isEqual(const Algorithm &other) const { return m_id == other.m_id; }
     inline bool isValid() const                       { return m_id != INVALID; }
     inline Family family() const                      { return family(m_id); }
@@ -104,6 +146,7 @@ public:
 
     size_t l2() const
     {
+#       ifdef XMRIG_ALGO_RANDOMX
         switch (m_id) {
         case RX_0:
         case RX_LOKI:
@@ -120,6 +163,7 @@ public:
         default:
             break;
         }
+#       endif
 
         return 0;
     }
@@ -135,14 +179,20 @@ public:
             case CN:
                 return oneMiB * 2;
 
+#           ifdef XMRIG_ALGO_CN_LITE
             case CN_LITE:
                 return oneMiB;
+#           endif
 
+#           ifdef XMRIG_ALGO_CN_HEAVY
             case CN_HEAVY:
                 return oneMiB * 4;
+#           endif
 
+#           ifdef XMRIG_ALGO_CN_PICO
             case CN_PICO:
                 return oneMiB / 4;
+#           endif
 
             default:
                 break;
@@ -151,6 +201,7 @@ public:
             return 0;
         }
 
+#       ifdef XMRIG_ALGO_RANDOMX
         if (f == RANDOM_X) {
             switch (m_id) {
             case RX_0:
@@ -163,13 +214,16 @@ public:
                 return oneMiB;
 
             case RX_ARQ:
+            case RX_DEFYX:
                 return oneMiB / 4;
 
             default:
                 break;
             }
         }
+#       endif
 
+#       ifdef XMRIG_ALGO_ARGON2
         if (f == ARGON2) {
             switch (m_id) {
             case AR2_CHUKWA:
@@ -182,7 +236,9 @@ public:
                 break;
             }
         }
+#       endif
 
+#       ifdef XMRIG_ALGO_ASTROBWT
         if (f == ASTROBWT) {
             switch (m_id) {
             case ASTROBWT_DERO:
@@ -192,10 +248,13 @@ public:
                 break;
             }
         }
+#       endif
 
+#       ifdef XMRIG_ALGO_KAWPOW_RVN
         if (f == KAWPOW) {
             return 32768;
         }
+#       endif
 
         return 0;
     }
@@ -215,38 +274,56 @@ public:
         case CN_ZLS:
         case CN_DOUBLE:
         case CN_CCX:
+#       ifdef XMRIG_ALGO_CN_GPU
+        case CN_GPU:
+#       endif
             return CN;
 
+#       ifdef XMRIG_ALGO_CN_LITE
         case CN_LITE_0:
         case CN_LITE_1:
             return CN_LITE;
+#       endif
 
+#       ifdef XMRIG_ALGO_CN_HEAVY
         case CN_HEAVY_0:
         case CN_HEAVY_TUBE:
         case CN_HEAVY_XHV:
             return CN_HEAVY;
+#       endif
 
+#       ifdef XMRIG_ALGO_CN_PICO
         case CN_PICO_0:
         case CN_PICO_TLO:
             return CN_PICO;
+#       endif
 
+#       ifdef XMRIG_ALGO_RANDOMX
         case RX_0:
         case RX_WOW:
         case RX_LOKI:
         case RX_ARQ:
         case RX_SFX:
         case RX_KEVA:
+        case RX_DEFYX:
             return RANDOM_X;
+#       endif
 
+#       ifdef XMRIG_ALGO_ARGON2
         case AR2_CHUKWA:
         case AR2_WRKZ:
             return ARGON2;
+#       endif
 
+#       ifdef XMRIG_ALGO_ASTROBWT
         case ASTROBWT_DERO:
             return ASTROBWT;
+#       endif
 
+#       ifdef XMRIG_ALGO_KAWPOW_RVN
         case KAWPOW_RVN:
             return KAWPOW;
+#       endif
 
         default:
             break;

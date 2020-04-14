@@ -50,12 +50,15 @@ struct AlgoName
 
 
 static AlgoName const algorithm_names[] = {
+#   ifdef XMRIG_ALGO_RANDOMX
     { "rx/0",             Algorithm::RX_0            },
     { "rx/wow",           Algorithm::RX_WOW          },
     { "rx/loki",          Algorithm::RX_LOKI         },
     { "rx/arq",           Algorithm::RX_ARQ          },
     { "rx/sfx",           Algorithm::RX_SFX          },
     { "rx/keva",          Algorithm::RX_KEVA         },
+    { "defyx",            Algorithm::RX_DEFYX        },
+#   endif
     { "cn/0",             Algorithm::CN_0            },
     { "cn/1",             Algorithm::CN_1            },
     { "cn/2",             Algorithm::CN_2            },
@@ -67,16 +70,31 @@ static AlgoName const algorithm_names[] = {
     { "cn/rwz",           Algorithm::CN_RWZ          },
     { "cn/zls",           Algorithm::CN_ZLS          },
     { "cn/double",        Algorithm::CN_DOUBLE       },
+    { "cn/ccx",           Algorithm::CN_CCX          },
+#   ifdef XMRIG_ALGO_CN_GPU
+    { "cn/gpu",           Algorithm::CN_GPU          },
+#   endif
+#   ifdef XMRIG_ALGO_CN_LITE
     { "cn-lite/0",        Algorithm::CN_LITE_0       },
     { "cn-lite/1",        Algorithm::CN_LITE_1       },
+#   endif
+#   ifdef XMRIG_ALGO_CN_HEAVY
     { "cn-heavy/0",       Algorithm::CN_HEAVY_0      },
     { "cn-heavy/xhv",     Algorithm::CN_HEAVY_XHV    },
     { "cn-heavy/tube",    Algorithm::CN_HEAVY_TUBE   },
+#   endif
+#   ifdef XMRIG_ALGO_CN_PICO
     { "cn-pico",          Algorithm::CN_PICO_0       },
     { "cn-pico/tlo",      Algorithm::CN_PICO_TLO     },
-    { "cn/ccx",           Algorithm::CN_CCX          },
+#   endif
+#   ifdef XMRIG_ALGO_ASTROBWT
     { "astrobwt",         Algorithm::ASTROBWT_DERO   },
+    { "astrobwt/dero",    Algorithm::ASTROBWT_DERO   },
+#   endif
+#   ifdef XMRIG_ALGO_KAWPOW_RVN
     { "kawpow",           Algorithm::KAWPOW_RVN      },
+    { "kawpow/rvn",       Algorithm::KAWPOW_RVN      },
+#   endif
 };
 
 

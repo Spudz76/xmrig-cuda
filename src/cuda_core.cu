@@ -503,12 +503,14 @@ __global__ void cryptonight_core_gpu_phase2_quad(
 
     a = (d_ctx_a + thread * 4)[sub];
     idx0 = shuffle<4>(sPtr,sub, a, 0);
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if (ALGO == Algorithm::CN_HEAVY_0 || ALGO == Algorithm::CN_HEAVY_TUBE || ALGO == Algorithm::CN_HEAVY_XHV) {
         if (partidx != 0) {
             // state is stored after all ctx_b states
             idx0 = *(d_ctx_b + threads * 4 + thread);
         }
     }
+#   endif
 
     d[1] = (d_ctx_b + thread * 4)[sub];
 
@@ -523,6 +525,7 @@ __global__ void cryptonight_core_gpu_phase2_quad(
         for (int x = 0; x < 2; ++x) {
             j = ((idx0 & MASK) >> 2) + sub;
 
+#           ifdef XMRIG_ALGO_CN_HEAVY
             if (ALGO == Algorithm::CN_HEAVY_TUBE) {
                 uint32_t k[4];
                 k[0] = ~loadGlobal32<uint32_t>(long_state + j);
@@ -549,6 +552,7 @@ __global__ void cryptonight_core_gpu_phase2_quad(
                     }
                 }
             } else {
+#           endif
                 uint32_t x_0 = loadGlobal32<uint32_t>(long_state + j);
 
                 if (ALGO == Algorithm::CN_CCX) {
@@ -566,7 +570,9 @@ __global__ void cryptonight_core_gpu_phase2_quad(
                     t_fn1((x_1 >> 8) & 0xff) ^
                     t_fn2((x_2 >> 16) & 0xff) ^
                     t_fn3((x_3 >> 24));
+#           ifdef XMRIG_ALGO_CN_HEAVY
             }
+#           endif
 
             //XOR_BLOCKS_DST(c, b, &long_state[j]);
             t1[0] = shuffle<4>(sPtr,sub, d[x], 0);
@@ -605,7 +611,11 @@ __global__ void cryptonight_core_gpu_phase2_quad(
                 const uint32_t tweaked_res = tweak1_2[sub & 1] ^ res;
                 uint32_t long_state_update = sub2 ? tweaked_res : res;
 
-                if (ALGO == Algorithm::CN_HEAVY_TUBE || ALGO == Algorithm::CN_RTO) {
+                if (ALGO == Algorithm::CN_RTO
+#                   ifdef XMRIG_ALGO_CN_HEAVY
+                    || ALGO == Algorithm::CN_HEAVY_TUBE
+#                   endif
+                ) {
                     uint32_t value = shuffle<4>(sPtr,sub, long_state_update, sub & 1) ^ long_state_update;
                     long_state_update = sub >= 2 ? value : long_state_update;
                 }
@@ -618,6 +628,7 @@ __global__ void cryptonight_core_gpu_phase2_quad(
 
             a = ( sub & 1 ? yy[1] : yy[0] ) ^ res;
             idx0 = shuffle<4>(sPtr,sub, a, 0);
+#           ifdef XMRIG_ALGO_CN_HEAVY
             if (ALGO == Algorithm::CN_HEAVY_0 || ALGO == Algorithm::CN_HEAVY_TUBE || ALGO == Algorithm::CN_HEAVY_XHV) {
                 int64_t n = loadGlobal64<uint64_t>( ( (uint64_t *) long_state ) + (( idx0 & MASK ) >> 3));
                 int32_t d = loadGlobal32<uint32_t>( (uint32_t*)(( (uint64_t *) long_state ) + (( idx0 & MASK) >> 3) + 1u ));
@@ -633,17 +644,20 @@ __global__ void cryptonight_core_gpu_phase2_quad(
 
                 idx0 = d ^ q;
             }
+#           endif
         }
     }
 
     if (bfactor > 0) {
         (d_ctx_a + thread * 4)[sub] = a;
         (d_ctx_b + thread * 4)[sub] = d[1];
+#       ifdef XMRIG_ALGO_CN_HEAVY
         if (ALGO == Algorithm::CN_HEAVY_0 || ALGO == Algorithm::CN_HEAVY_TUBE || ALGO == Algorithm::CN_HEAVY_XHV) {
             if (sub&1) {
                 *(d_ctx_b + threads * 4 + thread) = idx0;
             }
         }
+#       endif
         if (ALGO == Algorithm::CN_CCX) {
             *(d_ctx_b + threads * 4 + thread * 4 + sub) = float_as_int(conc_var);
         }
@@ -692,12 +706,14 @@ __global__ void cryptonight_core_gpu_phase3( int threads, int bfactor, int parti
 
         cn_aes_pseudo_round_mut( sharedMemory, text, key );
 
+#       ifdef XMRIG_ALGO_CN_HEAVY
         if (ALGO == Algorithm::CN_HEAVY_0 || ALGO == Algorithm::CN_HEAVY_TUBE || ALGO == Algorithm::CN_HEAVY_XHV) {
             #pragma unroll
             for (int j = 0; j < 4; ++j) {
                 text[j] ^= shuffle<8>(sPtr, subv, text[j], (subv+1) & 7);
             }
         }
+#       endif
     }
 
     MEMCPY8( d_ctx_state + thread * 50 + sub + 16, text, 2 );
@@ -742,7 +758,13 @@ void cryptonight_core_gpu_hash(nvid_ctx* ctx, uint32_t nonce)
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_core_gpu_phase1<ITERATIONS, MEM><<< grid, block8 >>>( ctx->device_blocks*ctx->device_threads,
             bfactorOneThree, i,
             ctx->d_long_state,
-            (props.isHeavy() ? ctx->d_ctx_state2 : ctx->d_ctx_state),
+#           ifdef XMRIG_ALGO_CN_HEAVY
+            (props.isHeavy() ? ctx->d_ctx_state2 :
+#           endif
+             ctx->d_ctx_state
+#           ifdef XMRIG_ALGO_CN_HEAVY
+            ),
+#           endif
             ctx->d_ctx_key1));
 
         if (partcount > 1 && ctx->device_bsleep > 0) {
@@ -807,7 +829,11 @@ void cryptonight_core_gpu_hash(nvid_ctx* ctx, uint32_t nonce)
         }
     }
 
-    const int roundsPhase3 = props.isHeavy() ? partcountOneThree * 2 : partcountOneThree;
+    const int roundsPhase3 =
+#     ifdef XMRIG_ALGO_CN_HEAVY
+      props.isHeavy() ? partcountOneThree * 2 :
+#     endif
+      partcountOneThree;
     for (int i = 0; i < roundsPhase3; i++) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_core_gpu_phase3<ITERATIONS, MEM, ALGO><<<
             grid,
@@ -960,11 +986,17 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint
         case Algorithm::CN_CCX:
             cryptonight_core_gpu_hash<Algorithm::CN_CCX>(ctx, startNonce);
             break;
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
+            break;
+#       endif
 
         default:
             break;
         }
     }
+#   ifdef XMRIG_ALGO_CN_LITE
     else if (algorithm.family() == Algorithm::CN_LITE) {
         switch (algorithm.id()) {
         case Algorithm::CN_LITE_0:
@@ -983,6 +1015,8 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint
             break;
         }
     }
+#   endif
+#   ifdef XMRIG_ALGO_CN_HEAVY
     else if (algorithm.family() == Algorithm::CN_HEAVY) {
         switch (algorithm.id()) {
         case Algorithm::CN_HEAVY_0:
@@ -1001,6 +1035,8 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint
             break;
         }
     }
+#   endif
+#   ifdef XMRIG_ALGO_CN_PICO
     else if (algorithm.family() == Algorithm::CN_PICO) {
         switch (algorithm.id()) {
         case Algorithm::CN_PICO_0:
@@ -1015,4 +1051,5 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig::Algorithm &algorithm, uint
             break;
         }
     }
+#   endif
 }

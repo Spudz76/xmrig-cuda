@@ -134,10 +134,12 @@ __global__ void cryptonight_extra_gpu_prepare(
     int thread = (blockDim.x * blockIdx.x + threadIdx.x);
     __shared__ uint32_t sharedMemory[1024];
 
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if (ALGO == Algorithm::CN_HEAVY_0) {
         cn_aes_gpu_init( sharedMemory );
         __syncthreads( );
     }
+#   endif
 
     if (thread >= threads) {
         return;
@@ -188,6 +190,7 @@ __global__ void cryptonight_extra_gpu_prepare(
     memcpy(d_ctx_key2 + thread * 40, ctx_key2, 40 * 4);
     memcpy(d_ctx_state + thread * 50, ctx_state, 50 * 4);
 
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if (ALGO == Algorithm::CN_HEAVY_0) {
         for (int i = 0; i < 16; i++) {
             for (size_t t = 4; t < 12; ++t) {
@@ -199,6 +202,7 @@ __global__ void cryptonight_extra_gpu_prepare(
         // double buffer to move manipulated state into phase1
         memcpy(d_ctx_state2 + thread * 50, ctx_state, 50 * 4);
     }
+#   endif
 }
 
 
@@ -211,11 +215,13 @@ __global__ void cryptonight_extra_gpu_final( int threads, uint64_t target, uint3
 
     __shared__ uint32_t sharedMemory[1024];
 
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if(ALGO == Algorithm::CN_HEAVY_0)
     {
         cn_aes_gpu_init( sharedMemory );
         __syncthreads( );
     }
+#   endif
     if ( thread >= threads )
         return;
 
@@ -228,6 +234,7 @@ __global__ void cryptonight_extra_gpu_final( int threads, uint64_t target, uint3
     for ( i = 0; i < 50; i++ )
         state[i] = ctx_state[i];
 
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if(ALGO == Algorithm::CN_HEAVY_0)
     {
         uint32_t key[40];
@@ -245,6 +252,7 @@ __global__ void cryptonight_extra_gpu_final( int threads, uint64_t target, uint3
             mix_and_propagate(state + 4 * 4);
         }
     }
+#   endif
     cn_keccakf2( (uint64_t *) state );
 
     switch ( ( (uint8_t *) state )[0] & 0x03 )
@@ -376,17 +384,22 @@ int cryptonight_extra_cpu_init(nvid_ctx *ctx, const xmrig::Algorithm &algorithm,
     }
     size_t ctx_b_size = 4 * sizeof(uint32_t) * wsize;
 
-    if (algorithm.family() == Algorithm::CN_HEAVY) {
-        // extent ctx_b to hold the state of idx0
-        ctx_b_size += sizeof(uint32_t) * wsize;
-        // create a double buffer for the state to exchange the mixed state to phase1
-        CUDA_CHECK(ctx->device_id, cudaMalloc(&ctx->d_ctx_state2, 50 * sizeof(uint32_t) * wsize));
-    }
-    else if (algorithm.id() == Algorithm::CN_CCX) {
+    if (algorithm.id() == Algorithm::CN_CCX) {
         ctx_b_size += sizeof(uint32_t) * 4 * wsize;
     } else {
-        ctx_b_size *= 4;
-        ctx->d_ctx_state2 = ctx->d_ctx_state;
+#       ifdef XMRIG_ALGO_CN_HEAVY
+        if (algorithm.family() == Algorithm::CN_HEAVY) {
+            // extent ctx_b to hold the state of idx0
+            ctx_b_size += sizeof(uint32_t) * wsize;
+            // create a double buffer for the state to exchange the mixed state to phase1
+            CUDA_CHECK(ctx->device_id, cudaMalloc(&ctx->d_ctx_state2, 50 * sizeof(uint32_t) * wsize));
+        } else {
+#       endif
+            ctx_b_size *= 4;
+            ctx->d_ctx_state2 = ctx->d_ctx_state;
+#       ifdef XMRIG_ALGO_CN_HEAVY
+        }
+#       endif
     }
 
     // POW block format http://monero.wikia.com/wiki/PoW_Block_Header_Format
@@ -425,13 +438,20 @@ void cryptonight_extra_cpu_prepare(nvid_ctx *ctx, uint32_t startNonce, const xmr
     /* pass two times d_ctx_state because the second state is used later in phase1,
      * the first is used than in phase3
      */
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if (algorithm.family() == Algorithm::CN_HEAVY) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_prepare<Algorithm::CN_HEAVY_0><<<grid, block >>>(wsize, ctx->d_input, ctx->inputlen, startNonce,
             ctx->d_ctx_state, ctx->d_ctx_state2, ctx->d_ctx_a, ctx->d_ctx_b, ctx->d_ctx_key1, ctx->d_ctx_key2));
-    } else if (algorithm == Algorithm::CN_R) {
+    } else
+#   endif
+    if (algorithm == Algorithm::CN_R) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_prepare<Algorithm::CN_R> << <grid, block >> > (wsize, ctx->d_input, ctx->inputlen, startNonce,
             ctx->d_ctx_state, ctx->d_ctx_state2, ctx->d_ctx_a, ctx->d_ctx_b, ctx->d_ctx_key1, ctx->d_ctx_key2));
-    } else if (CnAlgo<>::base(algorithm) == Algorithm::CN_2 || algorithm == Algorithm::CN_PICO_0 || algorithm == Algorithm::CN_PICO_TLO) {
+    } else if (CnAlgo<>::base(algorithm) == Algorithm::CN_2
+#   ifdef XMRIG_ALGO_CN_PICO
+        || algorithm == Algorithm::CN_PICO_0 || algorithm == Algorithm::CN_PICO_TLO
+#   endif
+    ) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_prepare<Algorithm::CN_2><<<grid, block >>>(wsize, ctx->d_input, ctx->inputlen, startNonce,
             ctx->d_ctx_state, ctx->d_ctx_state2, ctx->d_ctx_a, ctx->d_ctx_b, ctx->d_ctx_key1, ctx->d_ctx_key2));
     } else {
@@ -450,18 +470,30 @@ void cryptonight_extra_cpu_final(nvid_ctx *ctx, uint32_t startNonce, uint64_t ta
     dim3 grid( ( wsize + threadsperblock - 1 ) / threadsperblock );
     dim3 block( threadsperblock );
 
-    CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_nonce, 0xFF, 16 * sizeof(uint32_t)));
+    CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_nonce, 0xFF, 10 * sizeof(uint32_t)));
     CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_count, 0, sizeof(uint32_t)));
 
+#   ifdef XMRIG_ALGO_CN_HEAVY
     if (algorithm.family() == Algorithm::CN_HEAVY) {
         CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_HEAVY_0><<<grid, block >>>( wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state,ctx->d_ctx_key2 ));
     } else {
-        // fallback for all other algorithms
-        CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_0> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+#   endif
+#       ifdef XMRIG_ALGO_CN_GPU
+        if (algorithm == Algorithm::CN_GPU) {
+            CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_gpu_extra_gpu_final<Algorithm::CN_GPU> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+        } else {
+#       endif
+            // fallback for all other algorithms
+            CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_extra_gpu_final<Algorithm::CN_0> << <grid, block >> > (wsize, target, ctx->d_result_count, ctx->d_result_nonce, ctx->d_ctx_state, ctx->d_ctx_key2));
+#       ifdef XMRIG_ALGO_CN_GPU
+        }
+#       endif
+#   ifdef XMRIG_ALGO_CN_HEAVY
     }
+#   endif
 
     CUDA_CHECK(ctx->device_id, cudaMemcpy(rescount, ctx->d_result_count, sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(ctx->device_id, cudaMemcpy(resnonce, ctx->d_result_nonce, 16 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(ctx->device_id, cudaMemcpy(resnonce, ctx->d_result_nonce, 10 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
     /* There is only a 32bit limit for the counter on the device side
     * therefore this value can be greater than 10, in that case limit rescount
@@ -578,6 +610,7 @@ int cuda_get_deviceinfo(nvid_ctx *ctx)
     ctx->device_pciDeviceID     = props.pciDeviceID;
     ctx->device_pciDomainID     = props.pciDomainID;
 
+#   ifdef XMRIG_ALGO_RANDOMX
     if ((ctx->algorithm.family() == Algorithm::RANDOM_X) && ((ctx->device_blocks < 0) || (ctx->device_threads < 0))) {
         ctx->device_threads = 32;
         ctx->device_blocks = props.multiProcessorCount * 2;
@@ -593,16 +626,21 @@ int cuda_get_deviceinfo(nvid_ctx *ctx)
             ctx->device_blocks = max_blocks;
         }
     }
+#   endif
 
+#   ifdef XMRIG_ALGO_ASTROBWT
     if ((ctx->algorithm.family() == Algorithm::ASTROBWT) && ((ctx->device_blocks < 0) || (ctx->device_threads < 0))) {
         ctx->device_threads = 32;
         ctx->device_blocks = freeMemory / (ctx->algorithm.l3() * 32);
     }
+#   endif
 
+#   ifdef XMRIG_ALGO_KAWPOW_RVN
     if ((ctx->algorithm.family() == Algorithm::KAWPOW) && ((ctx->device_blocks < 0) || (ctx->device_threads < 0))) {
         ctx->device_threads = 128;
         ctx->device_blocks = props.multiProcessorCount * 2048;
     }
+#   endif
 
     // set all device option those marked as auto (-1) to a valid value
     if (ctx->device_blocks < 0) {
@@ -680,9 +718,11 @@ int cuda_get_deviceinfo(nvid_ctx *ctx)
         // 680bytes are extra meta data memory per hash
         size_t perThread = hashMemSize + 16192u + 680u;
 
+#       ifdef XMRIG_ALGO_CN_HEAVY
         if (ctx->algorithm.family() == Algorithm::CN_HEAVY) {
             perThread += 50 * 4; // state double buffer
         }
+#       endif
 
         ctx->device_threads = ((limitedMemory / perThread) / ctx->device_blocks) & 0xFFFFFFFE;
 

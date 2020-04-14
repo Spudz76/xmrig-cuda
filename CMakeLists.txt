@@ -1,12 +1,48 @@
 cmake_minimum_required(VERSION 2.8)
 project(xmrig-cuda)
 
+option(WITH_CN_LITE         "Enable CryptoNight-Lite algorithms family" ON)
+option(WITH_CN_HEAVY        "Enable CryptoNight-Heavy algorithms family" ON)
+option(WITH_CN_PICO         "Enable CryptoNight-Pico algorithm" ON)
+option(WITH_CN_GPU          "Enable CryptoNight-GPU algorithm" ON)
+option(WITH_RANDOMX         "Enable RandomX algorithms family" ON)
+option(WITH_ARGON2          "Enable Argon2 algorithms family" OFF) # unsupported
+option(WITH_ASTROBWT        "Enable AstroBWT algorithms family" ON)
+option(WITH_KAWPOW_RVN      "Enable KawPOW algorithms family" ON)
 
-option(WITH_RANDOMX "Enable RandomX algorithms family" ON)
+if (WITH_CN_LITE)
+    add_definitions(/DXMRIG_ALGO_CN_LITE)
+endif()
 
+if (WITH_CN_HEAVY)
+    add_definitions(/DXMRIG_ALGO_CN_HEAVY)
+endif()
+
+if (WITH_CN_PICO)
+    add_definitions(/DXMRIG_ALGO_CN_PICO)
+endif()
+
+if (WITH_CN_GPU)
+    add_definitions(/DXMRIG_ALGO_CN_GPU)
+endif()
+
+if (WITH_RANDOMX)
+    add_definitions(/DXMRIG_ALGO_RANDOMX)
+endif()
+
+if (WITH_ARGON2)
+    add_definitions(/DXMRIG_ALGO_ARGON2)
+endif()
+
+if (WITH_ASTROBWT)
+    add_definitions(/DXMRIG_ALGO_ASTROBWT)
+endif()
+
+if (WITH_KAWPOW_RVN)
+  add_definitions(/DXMRIG_ALGO_KAWPOW_RVN)
+endif()
 
 include_directories(src)
-add_definitions(/DXMRIG_ALGO_CN_LITE /DXMRIG_ALGO_CN_HEAVY /DXMRIG_ALGO_CN_PICO)
 add_definitions(/DCUB_IGNORE_DEPRECATED_CPP_DIALECT)
 
 

@@ -124,37 +124,51 @@ else()
     message(FATAL_ERROR "selected CUDA compiler '${CUDA_COMPILER}' is not supported")
 endif()
 
-set(CUDA_RANDOMX_SOURCES
-    src/RandomX/aes_cuda.hpp
-    src/RandomX/arqma/configuration.h
-    src/RandomX/arqma/randomx_arqma.cu
-    src/RandomX/blake2b_cuda.hpp
-    src/RandomX/common.hpp
-    src/RandomX/hash.hpp
-    src/RandomX/keva/configuration.h
-    src/RandomX/keva/randomx_keva.cu
-    src/RandomX/loki/configuration.h
-    src/RandomX/loki/randomx_loki.cu
-    src/RandomX/monero/configuration.h
-    src/RandomX/monero/randomx_monero.cu
-    src/RandomX/randomx_cuda.hpp
-    src/RandomX/randomx.cu
-    src/RandomX/wownero/configuration.h
-    src/RandomX/wownero/randomx_wownero.cu
-)
+if (WITH_RANDOMX)
+    set(CUDA_RANDOMX_SOURCES
+        src/RandomX/aes_cuda.hpp
+        src/RandomX/arqma/configuration.h
+        src/RandomX/arqma/randomx_arqma.cu
+        src/RandomX/blake2b_cuda.hpp
+        src/RandomX/common.hpp
+        src/RandomX/defyx/configuration.h
+        src/RandomX/defyx/randomx_defyx.cu
+        src/RandomX/hash.hpp
+        src/RandomX/keva/configuration.h
+        src/RandomX/keva/randomx_keva.cu
+        src/RandomX/loki/configuration.h
+        src/RandomX/loki/randomx_loki.cu
+        src/RandomX/monero/configuration.h
+        src/RandomX/monero/randomx_monero.cu
+        src/RandomX/randomx_cuda.hpp
+        src/RandomX/randomx.cu
+        src/RandomX/wownero/configuration.h
+        src/RandomX/wownero/randomx_wownero.cu
+    )
+else()
+    set(CUDA_RANDOMX_SOURCES "")
+endif()
 
-set(CUDA_ASTROBWT_SOURCES
-    src/AstroBWT/dero/AstroBWT.cu
-    src/AstroBWT/dero/BWT.h
-    src/AstroBWT/dero/salsa20.h
-    src/AstroBWT/dero/sha3.h
-)
+if (WITH_ASTROBWT)
+    set(CUDA_ASTROBWT_SOURCES
+        src/AstroBWT/dero/AstroBWT.cu
+        src/AstroBWT/dero/BWT.h
+        src/AstroBWT/dero/salsa20.h
+        src/AstroBWT/dero/sha3.h
+    )
+else()
+    set(CUDA_ASTROBWT_SOURCES "")
+endif()
 
-set(CUDA_KAWPOW_SOURCES
-    src/KawPow/raven/KawPow.cu
-    src/KawPow/raven/CudaKawPow_gen.cpp
-    src/KawPow/raven/CudaKawPow_gen.h
-)
+if (WITH_KAWPOW_RVN)
+    set(CUDA_KAWPOW_SOURCES
+        src/KawPow/raven/KawPow.cu
+        src/KawPow/raven/CudaKawPow_gen.cpp
+        src/KawPow/raven/CudaKawPow_gen.h
+    )
+else()
+    set(CUDA_KAWPOW_SOURCES "")
+endif()
 
 set(CUDA_SOURCES
     src/cryptonight.h
