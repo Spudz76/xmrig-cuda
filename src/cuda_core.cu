@@ -763,8 +763,9 @@ void cryptonight_core_gpu_hash(nvid_ctx* ctx, uint32_t nonce)
 #           endif
              ctx->d_ctx_state
 #           ifdef XMRIG_ALGO_CN_HEAVY
-            ),
+            )
 #           endif
+            ,
             ctx->d_ctx_key1));
 
         if (partcount > 1 && ctx->device_bsleep > 0) {

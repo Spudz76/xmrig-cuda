@@ -470,7 +470,7 @@ void cryptonight_extra_cpu_final(nvid_ctx *ctx, uint32_t startNonce, uint64_t ta
     dim3 grid( ( wsize + threadsperblock - 1 ) / threadsperblock );
     dim3 block( threadsperblock );
 
-    CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_nonce, 0xFF, 10 * sizeof(uint32_t)));
+    CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_nonce, 0xFF, 16 * sizeof(uint32_t)));
     CUDA_CHECK(ctx->device_id, cudaMemset(ctx->d_result_count, 0, sizeof(uint32_t)));
 
 #   ifdef XMRIG_ALGO_CN_HEAVY
@@ -493,7 +493,7 @@ void cryptonight_extra_cpu_final(nvid_ctx *ctx, uint32_t startNonce, uint64_t ta
 #   endif
 
     CUDA_CHECK(ctx->device_id, cudaMemcpy(rescount, ctx->d_result_count, sizeof(uint32_t), cudaMemcpyDeviceToHost));
-    CUDA_CHECK(ctx->device_id, cudaMemcpy(resnonce, ctx->d_result_nonce, 10 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
+    CUDA_CHECK(ctx->device_id, cudaMemcpy(resnonce, ctx->d_result_nonce, 16 * sizeof(uint32_t), cudaMemcpyDeviceToHost));
 
     /* There is only a 32bit limit for the counter on the device side
     * therefore this value can be greater than 10, in that case limit rescount
