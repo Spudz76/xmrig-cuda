@@ -105,6 +105,11 @@ public:
         case Algorithm::CN_DOUBLE:
             return CN_ITER * 2;
 
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            return 0xC000;
+#       endif
+
 #       ifdef XMRIG_ALGO_CN_PICO
         case Algorithm::CN_PICO_0:
         case Algorithm::CN_PICO_TLO:
@@ -120,6 +125,12 @@ public:
 
     inline static uint32_t mask(Algorithm::Id algo)
     {
+#       ifdef XMRIG_ALGO_CN_GPU
+        if (algo == Algorithm::CN_GPU) {
+            return 0x1FFFC0;
+        }
+#       endif
+
 #       ifdef XMRIG_ALGO_CN_PICO
         if (algo == Algorithm::CN_PICO_0) {
             return 0x1FFF0;
@@ -166,6 +177,11 @@ public:
         case Algorithm::CN_PICO_TLO:
 #       endif
             return Algorithm::CN_2;
+
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            return Algorithm::CN_GPU;
+#       endif
 
         default:
             break;
