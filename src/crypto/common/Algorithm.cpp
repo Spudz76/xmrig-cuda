@@ -68,6 +68,9 @@ static AlgoName const algorithm_names[] = {
     { "cn/zls",           Algorithm::CN_ZLS          },
     { "cn/double",        Algorithm::CN_DOUBLE       },
     { "cn/ccx",           Algorithm::CN_CCX          },
+#   ifdef XMRIG_ALGO_CN_GPU
+    { "cn/gpu",           Algorithm::CN_GPU          },
+#   endif
 #   ifdef XMRIG_ALGO_CN_LITE
     { "cn-lite/0",        Algorithm::CN_LITE_0       },
     { "cn-lite/1",        Algorithm::CN_LITE_1       },
