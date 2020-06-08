@@ -42,6 +42,9 @@ xmrig_cuda::Algorithm::Id xmrig_cuda::Algorithm::parse(uint32_t id)
 #       ifdef XMRIG_ALGO_CN_FEMTO
         CN_UPX2,
 #       endif
+#       ifdef XMRIG_ALGO_CN_GPU
+        CN_GPU,
+#       endif
 #       ifdef XMRIG_ALGO_RANDOMX
         RX_0, RX_WOW, RX_ARQ, RX_GRAFT, RX_SFX, RX_YADA,
 #       endif
