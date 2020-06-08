@@ -79,6 +79,9 @@ static inline void compat_usleep(int waitTime)
 #include "cuda_device.hpp"
 #include "cuda_fast_int_math_v2.hpp"
 #include "cuda_fast_div_heavy.hpp"
+#ifdef XMRIG_ALGO_CN_GPU
+#include "cuda_cryptonight_gpu.hpp"
+#endif
 
 #if defined(__x86_64__) || defined(_M_AMD64) || defined(__LP64__)
 #   define _ASM_PTR_ "l"
@@ -817,6 +820,74 @@ void cryptonight_core_gpu_hash(nvid_ctx* ctx, uint32_t nonce)
 }
 
 
+#ifdef XMRIG_ALGO_CN_GPU
+template<xmrig_cuda::Algorithm::Id ALGO>
+void cryptonight_core_gpu_hash_gpu(nvid_ctx* ctx, uint32_t nonce)
+{
+    using namespace xmrig_cuda;
+    constexpr CnAlgo<ALGO> props;
+
+    constexpr size_t ITERATIONS   = props.iterations();
+    constexpr size_t MEMORY       = props.memory();
+
+    dim3 grid( ctx->device_blocks );
+    dim3 block( ctx->device_threads );
+    dim3 block2( ctx->device_threads << 1 );
+    dim3 block4( ctx->device_threads << 2 );
+    dim3 block8( ctx->device_threads << 3 );
+
+    const uint32_t intensity = ctx->device_blocks * ctx->device_threads;
+
+    CUDA_CHECK_KERNEL(
+        ctx->device_id,
+        xmrig_cuda::cn_gpu::cn_explode_gpu<MEMORY><<<intensity,32>>>((int*)ctx->d_ctx_state, (int*)ctx->d_long_state)
+    );
+
+    int partcount = 1 << ctx->device_bfactor;
+    for(int i = 0; i < partcount; i++)
+    {
+        CUDA_CHECK_KERNEL(
+            ctx->device_id,
+            // 36 x 16byte x numThreads
+            xmrig_cuda::cn_gpu::cryptonight_core_gpu_phase2_gpu<ITERATIONS, MEMORY>
+                <<<ctx->device_blocks, ctx->device_threads * 16,  36 * 16 * ctx->device_threads>>>
+                (
+                    (int*)ctx->d_ctx_state,
+                    (int*)ctx->d_long_state,
+                    ctx->device_bfactor,
+                    i,
+                    ctx->d_ctx_a,
+                    ctx->d_ctx_b
+                )
+        );
+    }
+
+    /* bfactor for phase 3
+     *
+     * 3 consume less time than phase 2, therefore we begin with the
+     * kernel splitting if the user defined a `bfactor >= 5`
+     */
+    int bfactorOneThree = ctx->device_bfactor - 4;
+    if( bfactorOneThree < 0 )
+        bfactorOneThree = 0;
+
+    int partcountOneThree = 1 << bfactorOneThree;
+    int roundsPhase3 = partcountOneThree * 2;
+
+    for ( int i = 0; i < roundsPhase3; i++ )
+    {
+        CUDA_CHECK_KERNEL(ctx->device_id, cryptonight_core_gpu_phase3<ITERATIONS,MEMORY/4, Algorithm::CN_HEAVY_0><<<
+            grid,
+            block8,
+            block8.x * sizeof(uint32_t) * static_cast< int >( ctx->device_arch[0] < 3 )
+        >>>( ctx->device_blocks*ctx->device_threads,
+            bfactorOneThree, i,
+            ctx->d_long_state,
+            ctx->d_ctx_state, ctx->d_ctx_key2 ));
+    }
+}
+#endif
+
 void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm, uint64_t height, uint32_t startNonce)
 {
     using namespace xmrig_cuda;
@@ -895,6 +966,12 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm,
             cryptonight_core_gpu_hash<Algorithm::CN_CCX>(ctx, startNonce);
             break;
 
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
+            break;
+#       endif
+
         default:
             break;
         }
@@ -908,6 +985,12 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm,
         case Algorithm::CN_LITE_1:
             cryptonight_core_gpu_hash<Algorithm::CN_LITE_1>(ctx, startNonce);
             break;
+
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
+            break;
+#       endif
 
         default:
             break;
