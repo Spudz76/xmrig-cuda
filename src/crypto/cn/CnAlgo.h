@@ -119,6 +119,11 @@ public:
             return CN_ITER / 32;
 #       endif
 
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            return 0xC000;
+#       endif
+
         default:
             break;
         }
@@ -137,6 +142,12 @@ public:
 #       ifdef XMRIG_ALGO_CN_FEMTO
         if (algo == Algorithm::CN_UPX2) {
             return 0x1FFF0;
+        }
+#       endif
+
+#       ifdef XMRIG_ALGO_CN_GPU
+        if (algo == Algorithm::CN_GPU) {
+            return 0x1FFFC0;
         }
 #       endif
 
@@ -184,6 +195,11 @@ public:
 #       endif
             return Algorithm::CN_2;
 
+#       ifdef XMRIG_ALGO_CN_GPU
+        case Algorithm::CN_GPU:
+            return Algorithm::CN_GPU;
+#       endif
+
         default:
             break;
         }
@@ -226,6 +242,9 @@ template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_ZLS>::iterations() con
 template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_PICO_0>::iterations() const       { return CN_ITER / 8; }
 template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_PICO_TLO>::iterations() const     { return CN_ITER / 8; }
 template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_UPX2>::iterations() const         { return CN_ITER / 32; }
+#ifdef XMRIG_ALGO_CN_GPU
+template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_GPU>::iterations() const          { return 0xC000; }
+#endif
 
 
 template<> constexpr inline size_t CnAlgo<Algorithm::CN_LITE_0>::memory() const             { return CN_MEMORY / 2; }
@@ -240,6 +259,9 @@ template<> constexpr inline size_t CnAlgo<Algorithm::CN_UPX2>::memory() const   
 
 template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_PICO_0>::mask() const             { return 0x1FFF0; }
 template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_UPX2>::mask() const               { return 0x1FFF0; }
+#ifdef XMRIG_ALGO_CN_GPU
+template<> constexpr inline uint32_t CnAlgo<Algorithm::CN_GPU>::mask() const                { return 0x1FFFC0; }
+#endif
 
 
 } /* namespace xmrig_cuda */
