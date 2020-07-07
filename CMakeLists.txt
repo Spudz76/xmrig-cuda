@@ -72,6 +72,7 @@ endif()
 
 
 include_directories(src)
+add_definitions(/DXMRIG_ALGO_CN_GPU)
 add_definitions(/DCUB_IGNORE_DEPRECATED_CPP_DIALECT)
 
 
