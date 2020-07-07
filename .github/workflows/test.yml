@@ -19,3 +19,110 @@ jobs:
           cmake . -G "Visual Studio 16 2019" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.4"
           cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
           .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+  build_win_cuda10_2:
+    name: Windows CUDA 10.2
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install CUDA
+        run: |
+          powershell -Command "Invoke-WebRequest http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe -OutFile .\cuda_setup.exe"
+          start /wait .\cuda_setup.exe -s nvcc_10.2 cudart_10.2 nvrtc_10.2 nvrtc_dev_10.2 nvml_dev_10.2
+        shell: cmd
+      - name: Build project on Windows
+        run: |
+          cmake . -G "Visual Studio 16 2019" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2"
+          cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
+          .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+  build_win_cuda10_1:
+    name: Windows CUDA 10.1
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install CUDA
+        run: |
+          powershell -Command "Invoke-WebRequest https://developer.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe -OutFile .\cuda_setup.exe"
+          start /wait .\cuda_setup.exe -s nvcc_10.1 cudart_10.1 nvrtc_10.1 nvrtc_dev_10.1 nvml_dev_10.1
+        shell: cmd
+      - name: Build project on Windows
+        run: |
+          cmake . -G "Visual Studio 16 2019" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.1"
+          cd "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin"
+          .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+  build_win_cuda10_0:
+    name: Windows CUDA 10.0
+    runs-on: windows-2016
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install CUDA
+        run: |
+          powershell -Command "Invoke-WebRequest https://developer.nvidia.com/compute/cuda/10.0/Prod/network_installers/cuda_10.0.130_win10_network -OutFile .\cuda_setup.exe"
+          start /wait .\cuda_setup.exe -s nvcc_10.0 cudart_10.0 nvrtc_10.0 nvrtc_dev_10.0 nvml_dev_10.0
+        shell: cmd
+      - name: Build project on Windows
+        run: |
+          cmake . -G "Visual Studio 15 2017 Win64" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.0"
+          cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin"
+          .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+  build_win_cuda9_2:
+    name: Windows CUDA 9.2
+    runs-on: windows-2016
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install CUDA
+        run: |
+          Invoke-WebRequest https://developer.nvidia.com/compute/cuda/9.2/Prod2/network_installers2/cuda_9.2.148_win10_network -OutFile .\cuda_setup.exe
+          cmd /c start /wait .\cuda_setup.exe -s nvcc_9.2 cudart_9.2 nvrtc_9.2 nvrtc_dev_9.2 nvml_dev_9.2
+          Select-String -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include\crt\host_config.h" -Pattern "_MSC_VER"
+          (Get-Content -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include\crt\host_config.h") -replace "1913","1920" | Set-Content "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include\crt\host_config.h"
+          Select-String -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include\crt\host_config.h" -Pattern "_MSC_VER"
+        shell: powershell
+      - name: Build project on Windows
+        run: |
+          cmake . -G "Visual Studio 15 2017 Win64" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.2"
+          cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin"
+          .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+  build_win_cuda9_1:
+    name: Windows CUDA 9.1
+    runs-on: windows-2016
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@master
+      - name: Install CUDA
+        run: |
+          Invoke-WebRequest https://developer.nvidia.com/compute/cuda/9.1/Prod/network_installers/cuda_9.1.85_win10_network -OutFile .\cuda_setup.exe
+          cmd /c start /wait .\cuda_setup.exe -s nvcc_9.1 cudart_9.1 nvrtc_9.1 nvrtc_dev_9.1 nvml_dev_9.1
+          Select-String -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_config.h" -Pattern "_MSC_VER"
+          (Get-Content -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_config.h") -replace "1911","1920" | Set-Content "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_config.h"
+          Select-String -Path "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.1\include\crt\host_config.h" -Pattern "_MSC_VER"
+        shell: powershell
+      - name: Build project on Windows
+        run: |
+          cmake . -G "Visual Studio 15 2017 Win64" -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v9.1"
+          cd "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin"
+          .\MSBuild.exe /p:Configuration=Release $Env:GITHUB_WORKSPACE\xmrig-cuda.sln || exit 1
+
+#  build_win_cuda8_0:
+#    name: Windows CUDA 8.0
+#    runs-on: windows-2016
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@master
+#      - name: Install CUDA
+#        run: |
+#          Invoke-WebRequest https://developer.nvidia.com/compute/cuda/8.0/Prod2/network_installers/cuda_8.0.61_win10_network-exe -OutFile .\cuda_setup.exe
+#          cmd /c start /wait .\cuda_setup.exe -s compiler_8.0 cudart_8.0 nvrtc_8.0 nvrtc_dev_8.0 nvml_dev_8.0
+#        shell: powershell
+#      - name: Build project on Windows
+#        run: |
+#          cmake . -G "Visual Studio 15 2017 Win64" -T v140,host=x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_VERBOSE_MAKEFILE=ON -DCUDA_VERBOSE_BUILD=ON -DCUDA_SHOW_REGISTER=ON -DCUDA_TOOLKIT_ROOT_DIR="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v8.0"
+#          cmake --build . --config Release

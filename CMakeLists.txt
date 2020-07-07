@@ -69,6 +69,37 @@ if (WITH_CN_R)
     endif()
 endif()
 
+if (WITH_CN_LITE)
+    add_definitions(/DXMRIG_ALGO_CN_LITE)
+endif()
+
+if (WITH_CN_HEAVY)
+    add_definitions(/DXMRIG_ALGO_CN_HEAVY)
+endif()
+
+if (WITH_CN_PICO)
+    add_definitions(/DXMRIG_ALGO_CN_PICO)
+endif()
+
+if (WITH_CN_GPU)
+    add_definitions(/DXMRIG_ALGO_CN_GPU)
+endif()
+
+if (WITH_RANDOMX)
+    add_definitions(/DXMRIG_ALGO_RANDOMX)
+endif()
+
+if (WITH_ARGON2)
+    add_definitions(/DXMRIG_ALGO_ARGON2)
+endif()
+
+if (WITH_ASTROBWT)
+    add_definitions(/DXMRIG_ALGO_ASTROBWT)
+endif()
+
+if (WITH_KAWPOW)
+  add_definitions(/DXMRIG_ALGO_KAWPOW)
+endif()
 
 include_directories(src)
 add_definitions(/DCUB_IGNORE_DEPRECATED_CPP_DIALECT)
