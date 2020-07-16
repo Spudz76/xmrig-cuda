@@ -1,33 +1,26 @@
-option(XMRIG_LARGEGRID "Support large CUDA block count > 128" ON)
-if (XMRIG_LARGEGRID)
-    add_definitions("-DXMRIG_LARGEGRID=${XMRIG_LARGEGRID}")
+set(MSG_CUDA_MAP "\n\n"
+    "  Valid CUDA Toolkit Map:\n"
+    "   8.x for Fermi/Kepler/Maxwell/Pascal,\n"
+    "   9.x for       Kepler/Maxwell/Pascal/Volta,\n"
+    "  10.x for       Kepler/Maxwell/Pascal/Volta/Turing,\n"
+    "  11.x for              Maxwell/Pascal/Volta/Turing/Ampere\n\n"
+    "Reference https://developer.nvidia.com/cuda-gpus#compute for arch and family name\n\n"
+)
+if (CUDA_VERSION VERSION_LESS 8.0)
+    message("${MSG_CUDA_MAP}")
+    message(FATAL_ERROR "Unsupported CUDA version '${CUDA_VERSION}' detected.")
 endif()
 
-set(DEVICE_COMPILER "nvcc")
-set(CUDA_COMPILER "${DEVICE_COMPILER}" CACHE STRING "Select the device compiler")
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    list(APPEND DEVICE_COMPILER "clang")
-endif()
-
-set_property(CACHE CUDA_COMPILER PROPERTY STRINGS "${DEVICE_COMPILER}")
-
-list(APPEND CMAKE_PREFIX_PATH "$ENV{CUDA_ROOT}")
-list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
-
-set(CUDA_STATIC ON)
-find_package(CUDA 8.0 REQUIRED)
-
-find_library(CUDA_LIB libcuda cuda HINTS "${CUDA_TOOLKIT_ROOT_DIR}/lib64" "${LIBCUDA_LIBRARY_DIR}" "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" /usr/lib64 /usr/local/cuda/lib64)
-find_library(CUDA_NVRTC_LIB libnvrtc nvrtc HINTS "${CUDA_TOOLKIT_ROOT_DIR}/lib64" "${LIBNVRTC_LIBRARY_DIR}" "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" /usr/lib64 /usr/local/cuda/lib64)
-
-set(LIBS ${LIBS} ${CUDA_LIBRARIES} ${CUDA_LIB} ${CUDA_NVRTC_LIB})
-
-set(DEFAULT_CUDA_ARCH "30;50")
+set(DEFAULT_CUDA_ARCH "50")
 
 # Fermi GPUs are only supported with CUDA < 9.0
 if (CUDA_VERSION VERSION_LESS 9.0)
     list(APPEND DEFAULT_CUDA_ARCH "20;21")
+endif()
+
+# Kepler GPUs are only supported with CUDA < 11.0
+if (CUDA_VERSION VERSION_LESS 11.0)
+    list(APPEND DEFAULT_CUDA_ARCH "30")
 endif()
 
 # add Pascal support for CUDA >= 8.0
@@ -39,6 +32,17 @@ endif()
 if (NOT CUDA_VERSION VERSION_LESS 9.0)
     list(APPEND DEFAULT_CUDA_ARCH "70")
 endif()
+
+# add Turing support for CUDA >= 10.0
+if (NOT CUDA_VERSION VERSION_LESS 10.0)
+    list(APPEND DEFAULT_CUDA_ARCH "75")
+endif()
+
+# add Ampere support for CUDA >= 11.0
+if (NOT CUDA_VERSION VERSION_LESS 11.0)
+    list(APPEND DEFAULT_CUDA_ARCH "80")
+endif()
+list(SORT DEFAULT_CUDA_ARCH)
 
 set(CUDA_ARCH "${DEFAULT_CUDA_ARCH}" CACHE STRING "Set GPU architecture (semicolon separated list, e.g. '-DCUDA_ARCH=20;35;60')")
 
@@ -52,12 +56,53 @@ foreach(CUDA_ARCH_ELEM ${CUDA_ARCH})
     unset(IS_NUMBER)
 
     if(${CUDA_ARCH_ELEM} LESS 20)
-        message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
-                            "Use '20' (for compute architecture 2.0) or higher.")
+        message("${MSG_CUDA_MAP}")
+        message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified.")
+    endif()
+
+    if (NOT CUDA_VERSION VERSION_LESS 11.0)
+        if(${CUDA_ARCH_ELEM} LESS 50)
+            message("${MSG_CUDA_MAP}")
+            message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
+                                "Use CUDA v10.x maximum, Kepler (30/35/37) was dropped at v11.")
+        endif()
+    else()
+        if(NOT ${CUDA_ARCH_ELEM} LESS 80)
+            message("${MSG_CUDA_MAP}")
+            message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
+                                "Use CUDA v11.x minimum, Ampere (80) was added at v11.")
+        endif()
+    endif()
+
+    if (CUDA_VERSION VERSION_LESS 10.0)
+        if(NOT ${CUDA_ARCH_ELEM} LESS 75)
+            message("${MSG_CUDA_MAP}")
+            message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
+                                "Use CUDA v10.x minimum, Turing (75) was added at v10.")
+        endif()
+    endif()
+
+    if (NOT CUDA_VERSION VERSION_LESS 9.0)
+        if(${CUDA_ARCH_ELEM} LESS 30)
+            message("${MSG_CUDA_MAP}")
+            message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
+                                "Use CUDA v8.x maximum, Fermi (20/21) was dropped at v9.")
+        endif()
+    else()
+        if(NOT ${CUDA_ARCH_ELEM} LESS 70)
+            message("${MSG_CUDA_MAP}")
+            message(FATAL_ERROR "Unsupported CUDA architecture '${CUDA_ARCH_ELEM}' specified. "
+                                "Use CUDA v9.x minimum, Volta (70/72) was added at v9.")
+        endif()
     endif()
 endforeach()
+unset(MSG_CUDA_MAP)
 list(SORT CUDA_ARCH)
 
+option(XMRIG_LARGEGRID "Support large CUDA block count > 128" ON)
+if (XMRIG_LARGEGRID)
+    add_definitions("-DXMRIG_LARGEGRID=${XMRIG_LARGEGRID}")
+endif()
 option(CUDA_SHOW_REGISTER "Show registers used for each kernel and compute architecture" OFF)
 option(CUDA_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps" OFF)
 
@@ -124,37 +169,49 @@ else()
     message(FATAL_ERROR "selected CUDA compiler '${CUDA_COMPILER}' is not supported")
 endif()
 
-set(CUDA_RANDOMX_SOURCES
-    src/RandomX/aes_cuda.hpp
-    src/RandomX/arqma/configuration.h
-    src/RandomX/arqma/randomx_arqma.cu
-    src/RandomX/blake2b_cuda.hpp
-    src/RandomX/common.hpp
-    src/RandomX/hash.hpp
-    src/RandomX/keva/configuration.h
-    src/RandomX/keva/randomx_keva.cu
-    src/RandomX/loki/configuration.h
-    src/RandomX/loki/randomx_loki.cu
-    src/RandomX/monero/configuration.h
-    src/RandomX/monero/randomx_monero.cu
-    src/RandomX/randomx_cuda.hpp
-    src/RandomX/randomx.cu
-    src/RandomX/wownero/configuration.h
-    src/RandomX/wownero/randomx_wownero.cu
-)
+if (WITH_RANDOMX)
+    set(CUDA_RANDOMX_SOURCES
+        src/RandomX/aes_cuda.hpp
+        src/RandomX/arqma/configuration.h
+        src/RandomX/arqma/randomx_arqma.cu
+        src/RandomX/blake2b_cuda.hpp
+        src/RandomX/common.hpp
+        src/RandomX/hash.hpp
+        src/RandomX/keva/configuration.h
+        src/RandomX/keva/randomx_keva.cu
+        src/RandomX/loki/configuration.h
+        src/RandomX/loki/randomx_loki.cu
+        src/RandomX/monero/configuration.h
+        src/RandomX/monero/randomx_monero.cu
+        src/RandomX/randomx_cuda.hpp
+        src/RandomX/randomx.cu
+        src/RandomX/wownero/configuration.h
+        src/RandomX/wownero/randomx_wownero.cu
+    )
+else()
+    set(CUDA_RANDOMX_SOURCES "")
+endif()
 
-set(CUDA_ASTROBWT_SOURCES
-    src/AstroBWT/dero/AstroBWT.cu
-    src/AstroBWT/dero/BWT.h
-    src/AstroBWT/dero/salsa20.h
-    src/AstroBWT/dero/sha3.h
-)
+if (WITH_ASTROBWT)
+    set(CUDA_ASTROBWT_SOURCES
+        src/AstroBWT/dero/AstroBWT.cu
+        src/AstroBWT/dero/BWT.h
+        src/AstroBWT/dero/salsa20.h
+        src/AstroBWT/dero/sha3.h
+    )
+else()
+    set(CUDA_ASTROBWT_SOURCES "")
+endif()
 
-set(CUDA_KAWPOW_SOURCES
-    src/KawPow/raven/KawPow.cu
-    src/KawPow/raven/CudaKawPow_gen.cpp
-    src/KawPow/raven/CudaKawPow_gen.h
-)
+if (WITH_KAWPOW)
+    set(CUDA_KAWPOW_SOURCES
+        src/KawPow/raven/KawPow.cu
+        src/KawPow/raven/CudaKawPow_gen.cpp
+        src/KawPow/raven/CudaKawPow_gen.h
+    )
+else()
+    set(CUDA_KAWPOW_SOURCES "")
+endif()
 
 set(CUDA_SOURCES
     src/cryptonight.h
