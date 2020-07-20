@@ -9,11 +9,6 @@ set(MSG_CUDA_MAP "\n\n"
 
 add_definitions(-DCUB_IGNORE_DEPRECATED_CPP_DIALECT -DTHRUST_IGNORE_DEPRECATED_CPP_DIALECT)
 
-option(XMRIG_LARGEGRID "Support large CUDA block count > 128" ON)
-if (XMRIG_LARGEGRID)
-    add_definitions("-DXMRIG_LARGEGRID=${XMRIG_LARGEGRID}")
-endif()
-
 set(DEFAULT_CUDA_ARCH "50")
 
 # Fermi GPUs are only supported with CUDA < 9.0
@@ -50,6 +45,8 @@ endif()
 list(SORT DEFAULT_CUDA_ARCH)
 
 set(CUDA_ARCH "${DEFAULT_CUDA_ARCH}" CACHE STRING "Set GPU architecture (semicolon separated list, e.g. '-DCUDA_ARCH=20;35;60')")
+
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Wno-deprecated-gpu-targets")
 
 # validate architectures (only numbers are allowed)
 foreach(CUDA_ARCH_ELEM ${CUDA_ARCH})
@@ -145,10 +142,9 @@ elseif("${CUDA_COMPILER}" STREQUAL "nvcc")
     if (CUDA_VERSION VERSION_LESS 8.0)
         add_definitions(-D_FORCE_INLINES)
         add_definitions(-D_MWAITXINTRIN_H_INCLUDED)
+    elseif(CUDA_VERSION VERSION_LESS 9.0)
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Wno-deprecated-gpu-targets")
     endif()
-
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "-Wno-deprecated-gpu-targets")
-
     foreach(CUDA_ARCH_ELEM ${CUDA_ARCH})
         # set flags to create device code for the given architecture
         if("${CUDA_ARCH_ELEM}" STREQUAL "21")
