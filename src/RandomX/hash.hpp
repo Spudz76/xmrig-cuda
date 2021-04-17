@@ -39,6 +39,11 @@ void hash(nvid_ctx *ctx, uint32_t nonce, uint32_t nonce_offset, uint64_t target,
 //        CUDA_CHECK_KERNEL(ctx->device_id, sipesh<<<batch_size / 32, 32>>>(ctx->d_rx_hashes, ctx->d_input, ctx->inputlen, nonce));
 //        k12(input, inputSize, tempHash);
 //        CUDA_CHECK_KERNEL(ctx->device_id, k12<<<batch_size / 32, 32>>>(ctx->d_rx_hashes, ctx->d_input, ctx->inputlen, nonce));
+//=======
+//        rx_blake2b_wrapper::run(out, outlen, in, inlen);
+//        yespower_params_t params = { YESPOWER_1_0, 2048, 8, NULL };
+//        if (yespower_tls((const uint8_t *)out, outlen, &params, (yespower_binary_t *)out)) return -1;
+//        return KangarooTwelve((const unsigned char *)out, outlen, (unsigned char *)out, 32, 0, 0);
     } else if (ctx->inputlen <= 128) {
         CUDA_CHECK_KERNEL(ctx->device_id, blake2b_initial_hash << <batch_size / 32, 32 >> > (ctx->d_rx_hashes, ctx->d_input, ctx->inputlen, nonce));
     }

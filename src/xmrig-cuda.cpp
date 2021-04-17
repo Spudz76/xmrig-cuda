@@ -196,6 +196,10 @@ bool rxHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *resco
             RandomX_Arqma::hash(ctx, startNonce, 39, target, rescount, resnonce, ctx->rx_batch_size);
             break;
 
+        case Algorithm::RX_GRAFT:
+            RandomX_Graft::hash(ctx, startNonce, 39, target, rescount, resnonce, ctx->rx_batch_size);
+            break;
+
         case Algorithm::RX_KEVA:
             RandomX_Keva::hash(ctx, startNonce, 39, target, rescount, resnonce, ctx->rx_batch_size);
             break;
@@ -206,10 +210,7 @@ bool rxHash(nvid_ctx *ctx, uint32_t startNonce, uint64_t target, uint32_t *resco
 
         case Algorithm::RX_XLA:
             throw std::runtime_error(kUnsupportedAlgorithm);
-            //RandomX_DefyX::hash(ctx, startNonce, target, rescount, resnonce, ctx->rx_batch_size);
-
-        case Algorithm::RX_GRAFT:
-            RandomX_Graft::hash(ctx, startNonce, 39, target, rescount, resnonce, ctx->rx_batch_size);
+            //RandomX_Panthera::hash(ctx, startNonce, 39, target, rescount, resnonce, ctx->rx_batch_size);
             break;
 
         default:
