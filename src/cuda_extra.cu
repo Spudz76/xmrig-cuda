@@ -620,7 +620,7 @@ int cuda_get_deviceinfo(nvid_ctx *ctx)
         // Leave memory for 2080 MB dataset + 64 MB free
         // Each thread uses 1 scratchpad plus a few small buffers on GPU
         const size_t dataset_size = 2080u << 20;
-        const size_t max_blocks = (freeMemory - (ctx->rx_dataset_host ? 0 : dataset_size) - (64u << 20)) / (ctx->algorithm.l3() + 32768) / 32;
+        const int max_blocks = (freeMemory - (ctx->rx_dataset_host ? 0 : dataset_size) - (64u << 20)) / (ctx->algorithm.l3() + 32768) / 32;
         if (ctx->device_blocks > max_blocks) {
             ctx->device_blocks = max_blocks;
         }
@@ -724,6 +724,25 @@ int cuda_get_deviceinfo(nvid_ctx *ctx)
                 ctx->device_blocks = blockOptimal;
             }
         }
+
+#       ifdef XMRIG_ALGO_CN_GPU
+        if (ctx->algorithm == Algorithm::CN_GPU && props.major < 7) {
+            int t = 32;
+            int b = ctx->device_blocks;
+            int target_intensity = ctx->device_threads * b;
+            for (; t * b <= target_intensity; b++) {}
+            b--;
+            if (t != ctx->device_threads || b != ctx->device_blocks) {
+                printf("WARNING: NVIDIA GPU %d: modified cn/gpu t/b from %d/%d to %d/%d\n",
+                    ctx->device_id,
+                    ctx->device_threads, ctx->device_blocks,
+                    t, b
+                );
+                ctx->device_threads = t;
+                ctx->device_blocks = b;
+            }
+        }
+#       endif
 
         ctx->device_threads = std::min(ctx->device_threads, (props.major == 2 ? 64 : 128));
     }
