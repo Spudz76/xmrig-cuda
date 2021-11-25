@@ -47,6 +47,7 @@ xmrig_cuda::Algorithm::Id xmrig_cuda::Algorithm::parse(uint32_t id)
 #       endif
 #       ifdef XMRIG_ALGO_RANDOMX
         RX_0, RX_WOW, RX_ARQ, RX_GRAFT, RX_SFX, RX_KEVA,
+        RX_YADA,
 #       endif
 #       ifdef XMRIG_ALGO_ARGON2
         AR2_CHUKWA, AR2_CHUKWA_V2, AR2_WRKZ,

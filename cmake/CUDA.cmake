@@ -220,6 +220,8 @@ if (WITH_RANDOMX)
         src/RandomX/randomx.cu
         src/RandomX/wownero/configuration.h
         src/RandomX/wownero/randomx_wownero.cu
+        src/RandomX/yada/configuration.h
+        src/RandomX/yada/randomx_yada.cu
     )
 else()
     set(CUDA_RANDOMX_SOURCES "")
