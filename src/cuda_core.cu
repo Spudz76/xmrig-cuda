@@ -79,7 +79,9 @@ static inline void compat_usleep(int waitTime)
 #include "cuda_device.hpp"
 #include "cuda_fast_int_math_v2.hpp"
 #include "cuda_fast_div_heavy.hpp"
+#ifdef XMRIG_ALGO_CN_GPU
 #include "cuda_cryptonight_gpu.hpp"
+#endif
 
 #if defined(__x86_64__) || defined(_M_AMD64) || defined(__LP64__)
 #   define _ASM_PTR_ "l"
@@ -824,6 +826,7 @@ void cryptonight_core_gpu_hash(nvid_ctx* ctx, uint32_t nonce)
 }
 
 
+#ifdef XMRIG_ALGO_CN_GPU
 template<xmrig_cuda::Algorithm::Id ALGO>
 void cryptonight_core_gpu_hash_gpu(nvid_ctx* ctx, uint32_t nonce)
 {
@@ -889,6 +892,7 @@ void cryptonight_core_gpu_hash_gpu(nvid_ctx* ctx, uint32_t nonce)
             ctx->d_ctx_state, ctx->d_ctx_key2 ));
     }
 }
+#endif
 
 void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm, uint64_t height, uint32_t startNonce)
 {
@@ -968,9 +972,11 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm,
             cryptonight_core_gpu_hash<Algorithm::CN_CCX>(ctx, startNonce);
             break;
 
+#       ifdef XMRIG_ALGO_CN_GPU
         case Algorithm::CN_GPU:
             cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
             break;
+#       endif
 
         default:
             break;
@@ -986,9 +992,11 @@ void cryptonight_gpu_hash(nvid_ctx *ctx, const xmrig_cuda::Algorithm &algorithm,
             cryptonight_core_gpu_hash<Algorithm::CN_LITE_1>(ctx, startNonce);
             break;
 
+#       ifdef XMRIG_ALGO_CN_GPU
         case Algorithm::CN_GPU:
             cryptonight_core_gpu_hash_gpu<Algorithm::CN_GPU>(ctx, startNonce);
             break;
+#       endif
 
         default:
             break;
