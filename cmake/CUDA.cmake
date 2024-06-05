@@ -66,6 +66,7 @@ list(REMOVE_DUPLICATES SUPPORT_CUDA_ARCH)
 list(REMOVE_ITEM SUPPORT_CUDA_ARCH "")
 message(STATUS "CUDA Architectures supported by [${CUDA_NVCC_EXECUTABLE}]: ${SUPPORT_CUDA_ARCH}")
 set(DEFAULT_CUDA_ARCH "${SUPPORT_CUDA_ARCH}")
+list(REMOVE_ITEM DEFAULT_CUDA_ARCH "native")
 
 # Filter bloaty architectures
 foreach(CUDA_ARCH_ELEM ${USELESS_CUDA_ARCH})
@@ -80,7 +81,7 @@ set(CUDA_ARCH "${DEFAULT_CUDA_ARCH}" CACHE STRING "Set GPU architecture (semicol
 
 # validate architectures (only numbers are allowed)
 foreach(CUDA_ARCH_ELEM ${CUDA_ARCH})
-    string(REGEX MATCH "^[0-9]+$" IS_NUMBER ${CUDA_ARCH_ELEM})
+    string(REGEX MATCH "^[0-9a]+$" IS_NUMBER ${CUDA_ARCH_ELEM})
     if(NOT IS_NUMBER)
         message(FATAL_ERROR "Defined compute architecture '${CUDA_ARCH_ELEM}' in "
                             "'${CUDA_ARCH}' is not an integral number, use e.g. '30' (for compute architecture 3.0).")
